@@ -33,12 +33,12 @@ public class dataManserDTO {
 	          this.Caso = (Long) obj1.get("NumeroCasoSFDC");
 	          this.NroOrden = (Long) obj1.get("NumeroOrden");
 	          */
-	          this.nroCliente = (Long) obj1.get("mumeroCliente");
+	          this.nroCliente = (Long) obj1.get("numeroCliente");
 	          this.sMotivo = (String) obj1.get("motivo");
-	          this.nroMedidorNvo = (Long) obj1.get("NumeroMedidor");
-	          this.sMarcaMedidorNvo = (String) obj1.get("MarcaMedidor");
-	          this.sModeloMedidorNvo = (String) obj1.get("ModeloMedidor");
-	          this.sObservaciones = (String) obj1.get("Observaciones");
+	          this.nroMedidorNvo = (Long) obj1.get("numeroMedidor");
+	          this.sMarcaMedidorNvo = (String) obj1.get("marcaMedidor");
+	          this.sModeloMedidorNvo = (String) obj1.get("modeloMedidor");
+	          this.sObservaciones = (String) obj1.get("observaciones");
 	          
 	      }catch(ParseException pe){
 	          System.out.println("position: " + pe.getPosition());

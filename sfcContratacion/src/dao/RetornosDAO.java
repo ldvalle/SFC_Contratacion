@@ -358,13 +358,14 @@ public class RetornosDAO {
 		
 		sql = "SELECT o.tipo_orden, o.numero_orden, o.mensaje_xnear, o.ident_etapa, ";
 		sql += "h1.ots_status, h1.ots_fecha_proc ";
-		sql += "FROM orden o, ot_hiseven h1 ";
+		sql += "FROM orden o, ot_mac om, ot_hiseven h1 ";
 		sql += "WHERE o.sfc_caso = ? ";
 		sql += "AND o.sfc_nro_orden = ? ";
-		sql += "AND h1.ots_nro_orden = o.numero_orden ";
+		sql += "AND om.ot_mensaje_xnear = o.mensaje_xnear ";
+		sql += "AND h1.ots_nro_orden = om.ot_nro_orden ";
 		sql += "AND h1.ots_fecha_proc = (SELECT MAX(h2.ots_fecha_proc) ";
 		sql += "	FROM ot_hiseven h2 ";
-		sql += " 	WHERE h2.ots_nro_orden = o.numero_orden) ";
+		sql += " 	WHERE h2.ots_nro_orden = om.ot_nro_orden) ";
 		
 		return sql;
 	}
@@ -488,7 +489,7 @@ public class RetornosDAO {
 		sql += "WHERE origen = 'MAC' ";
 		sql += "AND nro_mensaje = ? ";
 		sql += "AND estado = 'EJECUTADO' ";
-
+				
 		return sql;
 	}
 	

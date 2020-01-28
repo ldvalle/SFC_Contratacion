@@ -265,8 +265,8 @@ public class SuministroDAO {
 		String sTrabajo;
 	
 		if(sProcedimiento == "MANSER") {
-			sTema=regInter.sMotivo.substring(1, 4);
-			sTrabajo=regInter.sMotivo.substring(4);
+			sTema=regInter.sMotivo.substring(0, 3);
+			sTrabajo=regInter.sMotivo.substring(3);
 		}else {
 			sTema=regInter.sMotivo;
 			sTrabajo=" ";
@@ -358,9 +358,10 @@ public class SuministroDAO {
 			//Actualiza Caso
 			sql = query9();
 			pstm = con.prepareStatement(sql);
-			pstm.setLong(1, regInter.Caso);
-			pstm.setLong(2, regInter.NroOrden);
-			pstm.setString(3, sProcedimiento);
+			pstm.setInt(1, 1);
+			pstm.setLong(2, regInter.Caso);
+			pstm.setLong(3, regInter.NroOrden);
+			pstm.setString(4, sProcedimiento);
 			pstm.executeUpdate();
 			pstm=null;
 			
@@ -412,6 +413,7 @@ public class SuministroDAO {
 			
 			//Enviar Mensaje
 			sql = query6(regMen);
+			
 			pstm = con.prepareStatement(sql);
 			pstm.execute();
 			pstm=null;
@@ -476,9 +478,10 @@ public class SuministroDAO {
 			//Actualiza Caso
 			sql = query9();
 			pstm = con.prepareStatement(sql);
-			pstm.setLong(1, regInter.Caso);
-			pstm.setLong(2, regInter.NroOrden);
-			pstm.setString(3, sProcedimiento);
+			pstm.setInt(1, 1);
+			pstm.setLong(2, regInter.Caso);
+			pstm.setLong(3, regInter.NroOrden);
+			pstm.setString(4, sProcedimiento);
 			pstm.executeUpdate();
 			pstm=null;
 			
@@ -794,7 +797,7 @@ public class SuministroDAO {
 		sql += "0, ";				//corr_factint			//30
 		sql += "'N', ";				//modifica_red			//31
 		sql += "TODAY, ";			//modifica_red			//32
-		if(reg.sTipoCliente == null || reg.sTipoCliente.equals("")) {						//33
+		if(reg.sTipoCliente == null || reg.sTipoCliente.trim().equals("")) {						//33
 			sql += "NULL,";
 		}else {
 			sql += "'" + reg.sTipoCliente.trim() + "', ";
@@ -805,9 +808,9 @@ public class SuministroDAO {
 			sql += "NULL,";
 		}
 		sql += "'" + reg.sTipoFpago.trim() + "', ";			//35
-		if(reg.sTipoFpago.trim()=="D") {
+		if(reg.sTipoFpago.trim().equals("D")){
 			sql += "'" + reg.sCodTarjeta.trim() + "', ";	//36
-			sql += " 9, ";									//37
+			sql += " 1, ";									//37
 			sql += "'" + reg.sNroTarjeta.trim() + "', ";	//38
 		}else {
 			sql += "NULL, ";
@@ -986,7 +989,6 @@ public class SuministroDAO {
 		sql += ")VALUES ( ";
 		sql += "?, ?, ?, 1, ?, ?, CURRENT, 'RQ', 'SALEFORCE', ?, ?, ?, ?, ?, ?, ?) ";
 		
-		
 		return sql;
 	}
 	
@@ -1025,7 +1027,7 @@ public class SuministroDAO {
 		sql += "sucursal_ede, ";
 		sql += "codigo_extraccion ";
 		sql += ")VALUES( ";
-		sql += "?, ?, 42, ?, 9, ";
+		sql += "?, ?, 42, ?, 1, ";
 		sql += "?, TODAY, 'SFC_CONTRATA', ";
 		sql += "'0100', 'N') ";
 		

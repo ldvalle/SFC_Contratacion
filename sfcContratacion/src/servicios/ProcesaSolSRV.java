@@ -26,9 +26,7 @@ public class ProcesaSolSRV {
 				System.out.println("Error al procesar Solicitud");
 				return false;
 			}
-			
 		}		
-
 		
 		return true;
 	}
@@ -91,7 +89,7 @@ public class ProcesaSolSRV {
 			regSF.codCreditCard = miDAO.getTrafoSapMac("CARDTYPE", "ACRO", regSF.codCreditCard.trim());
 			regSF.codCreditCard=regSF.codCreditCard.trim();
 		}
-			//Transformar Codigo Servicio -- voy a tener mas de un opcion MAC por una SFC
+		//Transformar Codigo Servicio -- voy a tener mas de un opcion MAC por una SFC
 		if(regSF.ClaseServicio.trim()!= null || (!regSF.ClaseServicio.equals(""))) {
 			regSF.ClaseServicio = miDAO.getTrafoSapMac("TIPCLI", "ACRO", regSF.ClaseServicio.trim());
 		}

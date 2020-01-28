@@ -1,6 +1,5 @@
 package entidades;
 
-
 public class ordenDTO {
 	public String		tipo_orden;
 	public String		numero_orden;

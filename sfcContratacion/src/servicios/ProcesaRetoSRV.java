@@ -54,6 +54,19 @@ public class ProcesaRetoSRV {
 				if(regSts.ident_etapa=="FI") {
 					regSts.iSts=5;
 					regSts.DescriSts="Finalizado";
+					
+					switch(regSts.status) {
+						case "NORE":
+							regSts.iSts=6;
+							regSts.DescriSts="Finalizado No Realizado";
+	
+							break;
+						case "REAL":
+							regSts.iSts=5;
+							regSts.DescriSts="Finalizado OK";
+	
+							break;
+					}
 				}else {
 					switch(regSts.status) {
 						case "NOTI":
