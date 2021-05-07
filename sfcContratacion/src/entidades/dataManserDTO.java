@@ -14,7 +14,8 @@ public class dataManserDTO {
 	public String sMarcaMedidorNvo;	/* No está en el Json*/
 	public String sModeloMedidorNvo;	/* No está en el Json*/
 	public String sObservaciones;
-	public String Sucursal;
+	public int Sucursal;
+	public String sCentroOperativo;
 	public String Dv;
 	
 	public dataManserDTO(interfaceDTO regIn) {

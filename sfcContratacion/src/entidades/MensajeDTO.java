@@ -21,7 +21,7 @@ public class MensajeDTO {
 		this.lMensaje = lNroMensaje;
 		this.sProced = sProcedimiento;
 		this.sEtapa = "INICIO";
-		this.sPrivacidad = "1";
+		this.sPrivacidad = "0";
 		this.sUrgencia = "4";
 		this.sEncriptado = "N";
 		switch(sProcedimiento) {

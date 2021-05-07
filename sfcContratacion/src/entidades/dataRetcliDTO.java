@@ -12,7 +12,8 @@ public class dataRetcliDTO {
 	public long	nroCliente;
 	public String sMotivo;
 	public String	RetiroMedidor;
-	public String	Sucursal;
+	public int	Sucursal;
+	public String sCentroOperativo;
 	public String	Dv;
 	
 	public dataRetcliDTO(interfaceDTO regIn) {

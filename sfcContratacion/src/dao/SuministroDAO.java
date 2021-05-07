@@ -9,11 +9,7 @@ import entidades.MensajeDTO;
 */
 import entidades.*;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.CallableStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 
 import java.util.Collection;
 import java.util.Vector;
@@ -64,7 +60,41 @@ public class SuministroDAO {
 		return miLista;
 	}
 	
-	
+	public int getSucursal(String sCentroOp){
+		Connection con = null;
+		PreparedStatement pstm = null;
+		CallableStatement cal = null;
+
+		ResultSet rs = null;
+		int	iSucursal=0;
+
+		try{
+			con = UConnection.getConnection();
+			pstm = con.prepareStatement(SEL_SUCURSAL);
+			pstm.setString(1, sCentroOp.trim());
+
+			rs = pstm.executeQuery();
+
+			while(rs.next()){
+				iSucursal = rs.getInt(1);
+			}
+		}catch(Exception ex){
+			System.out.println("getSucursal()");
+			ex.printStackTrace();
+			throw new RuntimeException(ex);
+		}finally{
+			try{
+				if(rs != null) rs.close();
+				if(cal != null) cal.close();
+			}catch(Exception ex){
+				ex.printStackTrace();
+				throw new RuntimeException(ex);
+			}
+		}
+
+		return iSucursal;
+	}
+
 	public long getNroMensaje(String sProcedimiento){
 		Connection con = null;
 		PreparedStatement pstm = null;
@@ -109,7 +139,7 @@ public class SuministroDAO {
 		return lNroMensaje;
 	}
 	
-	public String getRolDestino(String sProcedimiento, String sSucursal) {
+	public String getRolDestino(String sProcedimiento, int iSucursal) {
 		String sRol="";
 		
 		Connection con = null;
@@ -118,14 +148,14 @@ public class SuministroDAO {
 	
 		String sql;
 		
-		sql = query2(sProcedimiento, sSucursal);
+		sql = query2(sProcedimiento, iSucursal);
 		
 		try{
 			con = UConnection.getConnection();
 			pstm = con.prepareStatement(sql);
 
 			pstm.setString(1, sProcedimiento);
-			pstm.setString(2, sSucursal);
+			pstm.setInt(2, iSucursal);
 
 			rs = pstm.executeQuery();
 			
@@ -149,13 +179,16 @@ public class SuministroDAO {
 		return sRol;
 	}
 	
-	public Boolean regSolSumin(dataIncorpoDTO regInter, long lNroMensaje, String sRolOrigen, String sRolDestino) {
+	public Boolean regSolSumin(String tipoSol, dataIncorpoDTO regInter, long lNroMensaje, String sRolOrigen, String sRolDestino) {
 		
 		Connection con = null;
 		PreparedStatement pstm = null;
 		ResultSet rs = null;
 		String sql;
 		long lNroSolicitud;
+		int	iCodResultado;
+		String sDescResultado;
+
 	
 		try{
 			con = UConnection.getConnection();
@@ -170,47 +203,6 @@ public class SuministroDAO {
 			rs=null;
 			pstm=null;
 
-			//Arma Solicitud
-			SolSumDTO regSol = new SolSumDTO(lNroSolicitud, lNroMensaje, regInter);
-			
-			//Armar Mensaje
-			MensajeDTO regMen = new MensajeDTO(lNroMensaje, lNroSolicitud, regSol.sDv, sRolOrigen, sRolDestino, "INCORPORACION");
-	
-			//Grabar Solicitud
-			sql = query4(regSol);
-			
-			pstm = con.prepareStatement(sql);
-			pstm.executeUpdate();
-			pstm=null;
-	
-			//Grabar Estado Solicitud
-			sql = query5();
-			pstm = con.prepareStatement(sql);
-			pstm.setLong(1, lNroSolicitud);
-			pstm.setString(2, regInter.Sucursal.trim());
-			pstm.setString(3, regInter.Motivo.trim());
-			pstm.executeUpdate();
-			pstm=null;
-	
-			if(regSol.sTipoFpago.trim()=="D") {
-				//Grabar Solicitud_adhpag
-				sql = query16();
-				pstm = con.prepareStatement(sql);
-				pstm.setLong(1, regSol.lNroCliente);
-				pstm.setString(2, regSol.sClienteDV.trim());
-				pstm.setString(3, regSol.sCodTarjeta.trim());
-				pstm.setString(4, regSol.sNroTarjeta.trim());
-
-				pstm.executeUpdate();
-				pstm=null;
-			}
-			
-			//Enviar Mensaje
-			sql = query6(regMen);
-			pstm = con.prepareStatement(sql);
-			pstm.execute();
-			pstm=null;
-	
 			//Actualiza Secuen
 			sql = query7();
 			pstm = con.prepareStatement(sql);
@@ -219,17 +211,156 @@ public class SuministroDAO {
 			pstm=null;
 			//pstm.close();
 
+			//Arma Solicitud
+			SolSumDTO regSol = new SolSumDTO(lNroSolicitud, lNroMensaje, regInter);
+			
+			//Armar Mensaje
+			MensajeDTO regMen = new MensajeDTO(lNroMensaje, lNroSolicitud, regSol.sDv, sRolOrigen, sRolDestino, "INCORPORACION");
+	
+			//Grabar Solicitud
+			sql = query4(regSol);
+
+			pstm = con.prepareStatement(sql);
+			pstm.executeUpdate();
+			pstm=null;
+	
+			//Grabar Estado Solicitud
+			sql = query5(tipoSol);
+			pstm = con.prepareStatement(sql);
+			pstm.setLong(1, lNroSolicitud);
+			pstm.setString(2, regInter.CentroOperativo.trim());
+			pstm.setString(3, regInter.Motivo.trim());
+			pstm.executeUpdate();
+			pstm=null;
+
+			if(tipoSol.trim().equals("INIC")) {
+				if (regSol.sTipoFpago.trim() == "D") {
+					//Grabar Solicitud_adhpag
+					sql = query16();
+					pstm = con.prepareStatement(sql);
+					pstm.setLong(1, regSol.lNroCliente);
+					pstm.setString(2, regSol.sClienteDV.trim());
+					pstm.setString(3, regSol.sCodTarjeta.trim());
+					pstm.setString(4, regSol.sNroTarjeta.trim());
+
+					pstm.executeUpdate();
+					pstm = null;
+				}
+
+				if (!regInter.eMail.trim().isEmpty()) {
+					//Graba el Email
+					pstm = con.prepareStatement(INS_SOL_CLI_MAIL);
+					pstm.setLong(1, lNroSolicitud);
+					pstm.setString(2, regInter.eMail.trim());
+
+					pstm.executeUpdate();
+					pstm = null;
+				}
+			}
+
+			if(tipoSol.trim().equals("INIC")) {
+				//Enviar Mensaje
+				sql = query6(regMen);
+				pstm = con.prepareStatement(sql);
+				pstm.execute();
+				pstm = null;
+			}else{
+				// Ejecutar Store de CamTit
+
+				pstm = con.prepareStatement(XPRO_CAMTIT);
+				pstm.setLong(1, regInter.NroCliente);
+				pstm.setLong(2, regInter.nroCuentaAnterior);
+				pstm.setLong(3, lNroSolicitud);
+				pstm.setLong(4, lNroMensaje);
+
+				rs = pstm.executeQuery();
+
+				rs.next();
+				iCodResultado = rs.getInt("codigo");
+				sDescResultado = rs.getString("descripcion");
+				rs=null;
+				pstm=null;
+
+				if(iCodResultado!=0){
+					System.out.println("ERROR en cambio titularidad");
+					System.out.println(String.format("Solicitud %d Mensaje %d", lNroSolicitud, lNroMensaje));
+					System.out.println(String.format("Cod Error: %d Desc: %s", iCodResultado, sDescResultado));
+					return false;
+				}else{
+					// Guardar Mensaje
+					pstm = con.prepareStatement(XPRO_GUARDAR);
+					pstm.setLong(1, lNroMensaje);
+					pstm.setString(2, regMen.sProced.trim());
+					pstm.setString(3, regMen.sEtapa.trim());
+					pstm.setInt(4, Integer.parseInt(regMen.sPrivacidad));
+					pstm.setInt(5, Integer.parseInt(regMen.sUrgencia));
+					pstm.setString(6, regMen.sEncriptado.trim());
+					pstm.setString(7, regMen.sReferencia.trim());
+					pstm.setString(8, regMen.sRolCon.trim());
+					pstm.setString(9, regMen.sRolOrg.trim());
+					pstm.setInt(10, regMen.iEmpCon);
+					pstm.setInt(11, regMen.iEmpOrg);
+					pstm.setString(12, regMen.sTexto.trim());
+
+					rs = pstm.executeQuery();
+
+					rs.next();
+					sDescResultado = rs.getString(1);
+					if( sDescResultado!= null ){
+						System.out.println("ERROR en cambio titularidad al guardar mensaje");
+						System.out.println(String.format("Solicitud %d Mensaje %d", lNroSolicitud, lNroMensaje));
+						System.out.println(String.format("Err Desc: %s",  sDescResultado));
+						return false;
+					}
+
+					rs=null;
+					pstm=null;
+
+					// Finalizar Mensaje
+					pstm = con.prepareStatement(XPRO_FINALIZAR);
+					pstm.setLong(1, lNroMensaje);
+					pstm.setString(2, regMen.sRolCon.trim());
+					pstm.setInt(3, regMen.iEmpCon);
+
+					rs = pstm.executeQuery();
+
+					rs.next();
+					sDescResultado = rs.getString(1);
+					if( sDescResultado!= null ){
+						System.out.println("ERROR en cambio titularidad al finalizar mensaje");
+						System.out.println(String.format("Solicitud %d Mensaje %d", lNroSolicitud, lNroMensaje));
+						System.out.println(String.format("Err Desc: %s",  sDescResultado));
+						return false;
+					}
+
+					rs=null;
+					pstm=null;
+				}
+
+
+			}
+
+
 			//Actualiza Caso
 			sql = query9();
 			pstm = con.prepareStatement(sql);
 			pstm.setInt(1, 1);			
 			pstm.setLong(2, regInter.Caso);
 			pstm.setLong(3, regInter.NroOrden);
-			pstm.setString(4, "INCORPORACION");
+			if(tipoSol.trim().equals("INIC")) {
+				pstm.setString(4, "INCORPORACION");
+			}else{
+				pstm.setString(4, "CAMTIT");
+			}
 			pstm.executeUpdate();
 			pstm=null;
-			
+
 			con.commit();
+			//con.rollback();
+
+			System.out.printf("Se generó solicitud %d\n", lNroSolicitud);
+			System.out.printf("Se generó Mensaje %d\n", lNroMensaje);
+
 		}catch(Exception ex){
 			System.out.println("regSolSumin()");
 			try {
@@ -341,7 +472,7 @@ public class SuministroDAO {
 			
 			pstm.setString(2, sNroOrden.trim());
 			pstm.setLong(3, lNroMensaje);
-			pstm.setString(4, regInter.Sucursal);
+			pstm.setString(4, regInter.sCentroOperativo);
 			
 			pstm.setString(5, sRolOrigen.trim());
 			
@@ -461,7 +592,7 @@ public class SuministroDAO {
 			
 			pstm.setString(2, sNroOrden.trim());
 			pstm.setLong(3, lNroMensaje);
-			pstm.setString(4, regInter.Sucursal);
+			pstm.setString(4, regInter.sCentroOperativo);
 			
 			pstm.setString(5, sRolOrigen.trim());
 			
@@ -533,7 +664,7 @@ public class SuministroDAO {
 			}
 			
 		}catch(Exception ex){
-			System.out.println("getRolDestino()");
+			System.out.println("getDataCliente()");
 			ex.printStackTrace();
 			throw new RuntimeException(ex);
 		}finally{
@@ -587,7 +718,77 @@ public class SuministroDAO {
 		
 	}
 	
-	
+	public boolean updateSol(SolSumDTO regS){
+		Connection con = null;
+		PreparedStatement pstm = null;
+
+		try{
+			con = UConnection.getConnection();
+			pstm = con.prepareStatement(UPD_SOLICITUD);
+
+			pstm.setString(1,regS.sNombre.trim());
+			pstm.setString(2, regS.sTipoDoc.trim());
+
+			if(regS.lNroDoc == null){
+				pstm.setNull(3, Types.INTEGER);
+			}else{
+				pstm.setLong(3, regS.lNroDoc);
+			}
+
+			pstm.setString(4, regS.sProvincia.trim());
+			pstm.setString(5, regS.sPartido.trim());
+			pstm.setString(6, regS.sLocalidad.trim());
+			pstm.setString(7, regS.sCodCalle.trim());
+			pstm.setString(8, regS.sNomCalle.trim());
+			pstm.setString(9, regS.sNroDir.trim());
+			pstm.setString(10, regS.sPiso.trim());
+			pstm.setString(11, regS.sDepto.trim());
+
+			if(regS.codPost == null){
+				pstm.setNull(12, Types.INTEGER);
+			}else{
+				pstm.setLong(12, regS.codPost);
+			}
+			pstm.setString(13, regS.sTipoIva.trim());
+			pstm.setString(14, regS.sCodPropiedad.trim());
+			pstm.setString(15, regS.sCiiu.trim());
+			pstm.setString(16, regS.sSucursal.trim());
+			pstm.setString(17, regS.nro_cuit.trim());
+			pstm.setString(18, regS.voltaje_solicitado.trim());
+			pstm.setString(19, regS.telefono.trim());
+			pstm.setString(20, regS.sTipoCliente.trim());
+			pstm.setString(21, regS.sCodEntreCalle1.trim());
+			pstm.setString(22, regS.sNomEntreCalle1.trim());
+			pstm.setString(23, regS.sCodEntreCalle2.trim());
+			pstm.setString(24, regS.sNomEntreCalle2.trim());
+
+			if(regS.potenciaContratada == null){
+				pstm.setNull(25, Types.INTEGER);
+			}else{
+				pstm.setLong(25, regS.potenciaContratada);
+			}
+
+			pstm.setString(26, regS.sRstObraCliente.trim());
+			pstm.setLong(27, regS.lNroSolicitud);
+
+			pstm.executeUpdate();
+
+		}catch(Exception ex){
+			System.out.println("updateSol()");
+			ex.printStackTrace();
+			throw new RuntimeException(ex);
+		}finally{
+			try{
+				if(pstm != null) pstm.close();
+			}catch(Exception ex){
+				ex.printStackTrace();
+				throw new RuntimeException(ex);
+			}
+		}
+
+
+		return true;
+	}
 
 	
 	private String query1(String sProcedimiento) {
@@ -599,7 +800,7 @@ public class SuministroDAO {
 		return sql;
 	}
 
-	private String query2(String sProcedimiento, String sSucursal) {
+	private String query2(String sProcedimiento, int iSucursal) {
 		String sql;
 		
 		sql = "SELECT rol FROM sfc_roles ";
@@ -672,8 +873,18 @@ public class SuministroDAO {
 		sql += "dp_cod_postal, ";				//43
 		sql += "dv_numero_cliente, ";			//44
 		sql += "sfc_caso, ";					//45
-		sql += "sfc_nro_orden ";				//46
-		   
+		// sql += "sfc_nro_orden, ";				//46
+
+		sql += "pod_id, ";						//47
+		sql += "sfc_rol, ";						//48
+		sql += "cod_entre, ";					//49
+		sql += "nom_entre, ";					//50
+		sql += "cod_entre1, ";					//51
+		sql += "nom_entre1, ";					//52
+		sql += "pot_cont_hp, ";					//53
+		sql += "rst_obra_cliente, ";			//54
+		sql += "cam_tit, ";						//55
+		sql += "cta_ant ";						//56
 		sql += ")VALUES( ";
 		sql += reg.lNroSolicitud + ", ";			//1
 		sql += "'" + reg.sDv + "', ";				//2
@@ -796,8 +1007,9 @@ public class SuministroDAO {
 		
 		sql += "0, ";				//corr_factint			//30
 		sql += "'N', ";				//modifica_red			//31
-		sql += "TODAY, ";			//modifica_red			//32
-		if(reg.sTipoCliente == null || reg.sTipoCliente.trim().equals("")) {						//33
+		sql += "TODAY, ";			//rst_fecha_inicio		//32
+
+		if(reg.sTipoCliente == null || reg.sTipoCliente.isEmpty()) {						//33
 			sql += "NULL,";
 		}else {
 			sql += "'" + reg.sTipoCliente.trim() + "', ";
@@ -849,23 +1061,88 @@ public class SuministroDAO {
 		}else {
 			sql += "'" + reg.sClienteDV.trim() + "', ";
 		}
+
 		sql += reg.Caso + ", ";								//45
-		sql += reg.NroOrden + ") ";							//46
-		
+		//sql += reg.NroOrden + ", ";							//46
+
+		if(reg.lPODid > 0) {								//47
+			sql += reg.lPODid + ", ";
+		}else{
+			sql += "NULL, ";
+		}
+
+		if(reg.sRolSFC.equals("") || reg.sRolSFC == null) {						//48
+			sql += "NULL, ";
+		}else {
+			sql += "'" + reg.sRolSFC.trim() + "', ";
+		}
+
+		if(reg.sCodEntreCalle1 == null || reg.sCodEntreCalle1.isEmpty()){		//49
+			sql += "NULL, ";
+		}else{
+			sql += "'" + reg.sCodEntreCalle1.trim() + "', ";
+		}
+
+		if(reg.sNomEntreCalle1 == null || reg.sNomEntreCalle1.isEmpty()){		//50
+			sql += "NULL, ";
+		}else{
+			sql += "'" + reg.sNomEntreCalle1.trim() + "', ";
+		}
+
+		if(reg.sCodEntreCalle2 == null || reg.sCodEntreCalle2.isEmpty()){		//51
+			sql += "NULL, ";
+		}else{
+			sql += "'" + reg.sCodEntreCalle2.trim() + "', ";
+		}
+
+		if(reg.sNomEntreCalle2 == null || reg.sNomEntreCalle2.isEmpty()){		//52
+			sql += "NULL, ";
+		}else{
+			sql += "'" + reg.sNomEntreCalle2.trim() + "', ";
+		}
+
+		if(reg.potenciaContratada== null ){										//53
+			sql += "NULL, ";
+		}else{
+			sql +=  "'" + reg.potenciaContratada + "', ";
+		}
+
+		if(reg.sRstObraCliente.trim() == null || reg.sRstObraCliente.isEmpty()){		//54
+			sql += "NULL, ";
+		}else{
+			sql += "'" + reg.sRstObraCliente.trim() + "', ";
+		}
+		sql += "'" + reg.camTit.trim() + "', ";									//55
+		if(reg.cta_ant==null){													//56
+			sql += "NULL) ";
+		}else{
+			sql += reg.cta_ant + ") ";
+		}
+
 		return sql;
 	}
 	
-	private String query5() {
+	private String query5(String tipoSol) {
 		String sql;
 
-		sql = "INSERT INTO est_sol ( ";
-		sql += "nro_solicitud, ";
-		sql += "fecha_generacion, ";
-		sql += "sucursal, ";
-		sql += "cod_motivo ";
-		sql += ")VALUES( ";
-		sql += "?, CURRENT, ?, ?) ";
-		
+		if(tipoSol.trim().equals("INIC")) {
+			sql = "INSERT INTO est_sol ( ";
+			sql += "nro_solicitud, ";
+			sql += "fecha_generacion, ";
+			sql += "sucursal, ";
+			sql += "cod_motivo ";
+			sql += ")VALUES( ";
+			sql += "?, CURRENT, ?, ?) ";
+		}else{
+			sql = "INSERT INTO est_sol ( ";
+			sql += "nro_solicitud, ";
+			sql += "fecha_generacion, ";
+			sql += "fecha_finalizacion, ";
+			sql += "sucursal, ";
+			sql += "cod_motivo ";
+			sql += ")VALUES( ";
+			sql += "?, CURRENT, CURRENT, ?, ?) ";
+		}
 		return sql;
 	}
 
@@ -914,7 +1191,7 @@ public class SuministroDAO {
 		sql += "FROM sfc_interface ";
 		sql += "WHERE estado = 0 ";
 		sql += "AND tarifa = 'T1' ";
-		sql += "AND tipo_sol IN ('INCORPORACION', 'MANSER', 'RETCLI') ";
+		sql += "AND tipo_sol IN ('INCORPORACION', 'MANSER', 'RETCLI', 'CAMTIT') ";
 		
 		return sql;
 	}
@@ -1066,5 +1343,52 @@ public class SuministroDAO {
 		
 		return sql;
 	}
-	
+	private static final String SEL_SUCURSAL = "SELECT cod_sucur FROM sucur_centro_op " +
+			"WHERE cod_centro_op = ? " +
+			"AND fecha_activacion <= TODAY " +
+			"AND (fecha_desactivac IS NULL OR fecha_desactivac > TODAY) ";
+
+	private static final String INS_SOL_CLI_MAIL = "INSERT INTO solicitud_cliente_mail " +
+			"(solicitud, " +
+			"email, " +
+			"ppal_mail, " +
+			"rol_ingreso, " +
+			"fecha_ingreso) " +
+			"VALUES ( ?, ?, 'S', 'SALESFORCE', TODAY) ";
+
+	private static final String UPD_SOLICITUD = "UPDATE solicitud SET " +
+			"nombre = ?, " +		// 1
+			"tip_doc = ?, " +		// 2
+			"nro_doc = ?, " +		// 3
+			"provincia = ?, " +		// 4
+			"partido = ?, " +		// 5
+			"localidad = ?, " +		// 6
+			"cod_calle = ?, " +		// 7
+			"nom_calle = ?, " +		// 8
+			"nro_dir = ?, " +		// 9
+			"piso_dir = ?, " +		// 10
+			"depto_dir = ?, " +		// 11
+			"cod_postal = ?, " +	// 12
+			"tipo_iva = ?, " +		// 13
+			"cod_propiedad = ?, " +		// 14
+			"ciiu = ?, " +			// 15
+			"sucursal = ?, " +		// 16
+			"nro_cuit = ?, " +		// 17
+			"voltaje_solicitado = ?, " +		// 18
+			"telefono = ?, " +		// 19
+			"tipo_cliente = ?, " +		// 20
+			"cod_entre = ?, " +		// 21
+			"nom_entre = ?, " +		// 22
+			"cod_entre1 = ?, " +		// 23
+			"nom_entre1 = ?, " +		// 24
+			"pot_cont_hp = ?, " +		// 25
+			"rst_obra_cliente = ?, " +		// 26
+			"WHERE nro_solicitud = ? ";		// 27
+
+	private static final String XPRO_CAMTIT ="{call sfc_contrata_alta_ct(?, ?, ?, ?) } ";
+
+	private static final String XPRO_GUARDAR = "{call xpro_guardar(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)}";
+
+	private static final String XPRO_FINALIZAR ="{call xpro_finalizar(?, ?, ?) } ";
+
 }

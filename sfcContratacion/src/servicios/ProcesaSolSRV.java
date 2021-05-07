@@ -1,5 +1,6 @@
 package servicios;
 
+
 import entidades.dataIncorpoDTO;
 import entidades.dataManserDTO;
 import entidades.MensajeDTO;
@@ -40,11 +41,24 @@ public class ProcesaSolSRV {
 				regIN.Caso = reg.caso;
 				regIN.NroOrden = reg.nro_orden;
 
-				if(!CargaSol(regIN)) {
+				if(!CargaSol("INC", regIN)) {
 					System.out.println("Error al cargar la solicitud.");
 					return false;
 				}
 				break;
+
+			case "CAMTIT":
+
+				dataIncorpoDTO regCamTit = new dataIncorpoDTO(reg);
+				regCamTit.Caso = reg.caso;
+				regCamTit.NroOrden = reg.nro_orden;
+
+				if(!CargaSol("CTIT", regCamTit)) {
+					System.out.println("Error al cargar la solicitud.");
+					return false;
+				}
+				break;
+
 			case "MANSER":
 				dataManserDTO regMan = new dataManserDTO(reg);
 				regMan.Caso = reg.caso;
@@ -72,28 +86,40 @@ public class ProcesaSolSRV {
 		
 	}
 	
-	public Boolean CargaSol(dataIncorpoDTO regSF) {
+	public Boolean CargaSol(String tipoSol, dataIncorpoDTO regSF) {
 		long lNroMensaje=0;
 		String	sRolOrigen="";
 		String  sRolDestino="";
 
 		SuministroDAO miDAO = new SuministroDAO();
-		
+
+		System.out.printf("Caso %d Nombre %s\n", regSF.Caso, regSF.Nombre);
+
+		//Levantar Sucursal dado el Centro Operativo
+		if(regSF.CentroOperativo.trim()!= null || (!regSF.CentroOperativo.equals(""))) {
+			regSF.Sucursal = miDAO.getSucursal(regSF.CentroOperativo.trim());
+		}
+
 		//Transformar Tarifa -- voy a tener mas de un opcion MAC por una SFC
+/*
 		if(regSF.Tarifa.trim()!= null || (!regSF.Tarifa.equals(""))) {
 			regSF.Tarifa = miDAO.getTrafoSapMac("TARIFTYP", "ACRO", regSF.Tarifa.trim());
 		}
-		
+*/
 		//Transformar Codigo Tarjeta Credito
+/*
 		if(regSF.codCreditCard.trim() != null || (!regSF.codCreditCard.equals(""))) {
 			regSF.codCreditCard = miDAO.getTrafoSapMac("CARDTYPE", "ACRO", regSF.codCreditCard.trim());
 			regSF.codCreditCard=regSF.codCreditCard.trim();
 		}
+ */
 		//Transformar Codigo Servicio -- voy a tener mas de un opcion MAC por una SFC
+/*
 		if(regSF.ClaseServicio.trim()!= null || (!regSF.ClaseServicio.equals(""))) {
-			regSF.ClaseServicio = miDAO.getTrafoSapMac("TIPCLI", "ACRO", regSF.ClaseServicio.trim());
+			//regSF.ClaseServicio = miDAO.getTrafoSapMac("TIPCLI", "ACRO", regSF.ClaseServicio.trim());
+			regSF.ClaseServicio = miDAO.getTrafoSapMac("TIPCLI", "COD_SAP", regSF.ClaseServicio.trim());
 		}
-		
+*/
 		//Transformar Tipo IVA
 		if(regSF.TipoIva.trim()!= null || (!regSF.TipoIva.equals(""))) {
 			regSF.TipoIva = miDAO.getTrafoSapMac("TIPIVA", "COD_SAP", regSF.TipoIva.trim());
@@ -107,15 +133,16 @@ public class ProcesaSolSRV {
 		}
 		
 		//Obtener Destino
-		sRolOrigen = "E17317";
-		sRolDestino =miDAO.getRolDestino("INCORPORACION", regSF.Sucursal);
-		
+		//sRolOrigen = "E17317";
+		sRolOrigen = "SALESFORCE";
+		sRolDestino =miDAO.getRolDestino("INC", regSF.Sucursal);
+		sRolDestino = "EVDI";
 		
 		//Registrar Solicitud
-		if(! miDAO.regSolSumin(regSF, lNroMensaje, sRolOrigen, sRolDestino)) {
+		if(! miDAO.regSolSumin(tipoSol, regSF, lNroMensaje, sRolOrigen, sRolDestino)) {
 			return false;
 		}
-		
+
 		return true;
 	}
 
@@ -131,7 +158,7 @@ public class ProcesaSolSRV {
 		//Obtener Sucursal Cliente
 		miCliente = miDAO.getDataCliente(regSF.nroCliente);
 		
-		regSF.Sucursal = miCliente.sSucursal;
+		regSF.sCentroOperativo = miCliente.sSucursal;
 		regSF.Dv = miCliente.sDV;
 		
 		//Obtener Nro.Mensaje		
@@ -145,8 +172,7 @@ public class ProcesaSolSRV {
 		sRolOrigen = "E17317";
 		sAreaOrigen = "SICO";
 		sRolDestino =miDAO.getRolDestino("MANSER", regSF.Sucursal);
-		
-		
+
 		//Registrar Manser
 		if(! miDAO.regManRet(regSF, lNroMensaje, sRolOrigen, sAreaOrigen, sRolDestino, "MANSER")) {
 			return false;
@@ -167,7 +193,7 @@ public class ProcesaSolSRV {
 		//Obtener Sucursal Cliente
 		miCliente = miDAO.getDataCliente(regSF.nroCliente);
 		
-		regSF.Sucursal = miCliente.sSucursal;
+		regSF.sCentroOperativo = miCliente.sSucursal;
 		regSF.Dv = miCliente.sDV;
 		
 		//Obtener Nro.Mensaje		

@@ -5,7 +5,7 @@ public class SolSumDTO {
 	public String	sDv;
 	public String	sNombre;
 	public String	sTipoDoc;
-	public long	lNroDoc;
+	public Long		lNroDoc;
 	public String	sProvincia;
 	public String	sPartido;
 	public String	sLocalidad;
@@ -14,7 +14,7 @@ public class SolSumDTO {
 	public String	sNroDir;
 	public String	sPiso;
 	public String	sDepto;
-	public long	codPost;
+	public Long	codPost;
 	//public long	lMensaje;
 	public String	sTipoIva;
 	public String	sTipoVenc;
@@ -41,23 +41,44 @@ public class SolSumDTO {
 	public String	sClienteDV;
 	public String	sCodTarjeta;
 	public String	sNroTarjeta;
-	
+
+	public long		lPODid;
+	public String	sRolSFC;
+
+	public String   sCodEntreCalle1;
+	public String	sNomEntreCalle1;
+	public String	sCodEntreCalle2;
+	public String	sNomEntreCalle2;
+
 	//Datos Postales
 	public String	dp_nom_provincia;
 	public String	dp_nom_localidad;
 	public String	dp_nom_calle;
 	public String	dp_nro_dir;
 	public String	dp_cod_postal;
+
+	public Long		potenciaContratada;
+	public String	sRstObraCliente;
+	public Long		cta_ant;
+	public String	camTit;
 	
 	public SolSumDTO(long NroSol, long NroMsg, dataIncorpoDTO regInt) {
 		this.lNroSolicitud = NroSol;
 		this.sDv = CalculaDV(NroSol);
 		this.sTipoVenc = "1";
-		this.sCodPropiedad = "1";
-		this.sEstado = "ET";
+		if(regInt.tipoAlta.trim().equals("INC")){
+			this.sEstado = "ET";
+			this.camTit = "N";
+		}else{
+			this.sEstado = "FI";
+			this.cta_ant = regInt.nroCuentaAnterior;
+			this.camTit = "S";
+		}
+
 		this.sCentroTrans = "*****";
+		this.sRstObraCliente = "N";
 
-
+		this.sCodPropiedad = regInt.CodPropiedad;
 		this.sCiiu = regInt.Ciiu;
 		this.sNombre = regInt.Nombre;
 		this.sTipoDoc = regInt.TipoDoc;
@@ -72,13 +93,14 @@ public class SolSumDTO {
 		this.sDepto = regInt.Depto;
 		this.codPost = regInt.codPost;
 		this.sTipoIva = regInt.TipoIva;
-		this.sSucursal = regInt.Sucursal;
-		
+		this.sSucursal = regInt.CentroOperativo;
+
 		if(regInt.TipoReparto == null) {
 			this.sTipoReparto = "NORMAL";
 		}else {
 			this.sTipoReparto = regInt.TipoReparto.trim();
 		}
+
 		if(regInt.TipoSum == null || regInt.TipoSum.trim()=="" || regInt.TipoSum.length()==0) {
 			this.sTipoSum = "0";
 		}else {
@@ -94,9 +116,12 @@ public class SolSumDTO {
 		this.telefono = regInt.telefono.trim();
 		this.lNroMensaje = NroMsg;
 		this.iServidor = 1;
-		this.sTipoCliente = regInt.ClaseServicio;
+
+		this.sTipoCliente = regInt.ClaseServicio.trim();
 		this.lNroCliente = regInt.NroCliente;
-		
+
+		this.sTipoFpago="N";
+		/*
 		if(regInt.NroTarjetaCredito.trim()== null || regInt.NroTarjetaCredito.equals("")) {
 			this.sTipoFpago="N";
 		}else {
@@ -104,16 +129,31 @@ public class SolSumDTO {
 			this.sCodTarjeta = regInt.codCreditCard.trim();
 			this.sNroTarjeta = regInt.NroTarjetaCredito.trim();
 		}
+		*/
+
 		
 		if(this.lNroCliente>0) {
 			this.sClienteDV = CalculaDV(this.lNroCliente);
 		}
-		
+
+		this.lPODid = regInt.PodID;
+		this.sRolSFC = regInt.Solicitante.trim();
+
+		this.sCodEntreCalle1 = regInt.codEntreCalle1.trim();
+		this.sNomEntreCalle1 = regInt.nomEntreCalle1.trim();
+		this.sCodEntreCalle2 = regInt.codEntreCalle2.trim();
+		this.sNomEntreCalle2 = regInt.nomEntreCalle2.trim();
+
+		this.potenciaContratada = regInt.PotenciaContratada;
+
+		/*
 		this.dp_cod_postal = regInt.codPostPostal.trim();
 		this.dp_nom_calle = regInt.NomCallePostal.trim();
 		this.dp_nom_localidad = regInt.localidadPostal.trim();
 		this.dp_nom_provincia = regInt.provinciaPostal.trim();
 		this.dp_nro_dir = regInt.NroDirPostal.trim();
+
+		 */
 	}
 	
 	private String CalculaDV(long NroSol) {
